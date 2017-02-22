@@ -1,0 +1,356 @@
+<html>
+
+
+<canvas id="cnv" width="1000" height="800" style="border:1px solid #d3d3d3;" ondrop="drop(event)" ondragover="allowDrop(event)"></canvas>
+
+
+
+
+<div id="partsBar" class="overlay">
+
+ <!-- Overlay content -->
+  <div class="overlay-content">
+
+    <img id ="cubePic" src="VCcube.png" draggable="true" ondragstart="drag(event)">
+    <openButton button onclick="openPB()">.</button></openButton>
+    
+
+  </div>
+
+</div>
+
+
+
+
+<style>
+/* CSS Content */
+
+
+.overlay {
+    height: 100%;
+    width: 1%;
+    position: fixed;
+    z-index: 1; 
+    left: 0;
+    top: 0;
+    background-color: rgb(0,128,225); 
+    background-color: rgba(0,128,225, 0.9); 
+    overflow-x: hidden; /* Disable horizontal scroll */
+    transition: 0.5s; /* Slide delay */
+}
+
+
+.overlay openButton {
+    position: absolute;
+    left: 80%;
+    top: 50%;
+    font-size: 36px;
+    color: #FFFFFF;
+}
+
+.overlay cubePart {
+    position: absolute;
+    right: 50%;
+    top: 10%;
+    font-size: 36px;
+    color: #FFFFFF;
+    border: 5px solid red;
+    padding: 10px;
+}
+
+</style>
+
+
+<script>
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+function drag(ev) {
+    ev.dataTransfer.setData("cubePic", ev.target.id);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    var part = ev.dataTransfer.getData("cubePic");
+    cubeInit();
+    closePB();
+}
+
+
+/* Sets size of canvas to current window size on init */
+function windowSize() {
+
+    var wS = document.getElementById("cnv");
+    wS.width = window.innerWidth;
+    wS.height = window.innerHeight;
+}
+windowSize();
+
+function openPB() {
+    document.getElementById("partsBar").style.width = "10%";
+}
+
+/* Close when someone clicks on the "x" symbol inside the overlay */
+function closePB() {
+    document.getElementById("partsBar").style.width = "1%";
+}
+
+</script>
+
+
+
+
+
+
+
+<body>
+<script>
+var Vertex = function(x, y, z) {
+    this.x = parseFloat(x);
+    this.y = parseFloat(y);
+    this.z = parseFloat(z);
+};
+
+var Vertex2D = function(x, y) {
+    this.x = parseFloat(x);
+    this.y = parseFloat(y);
+};
+
+var rect = function(center, a, b, c) {
+    // Generate the vertices
+    
+    var a0 = a / 2;
+    var b0 = b / 2;
+    var c0 = c / 2;
+
+    this.vertices = [
+        new Vertex(center.x - a0, center.y - b0, center.z + c0),
+        new Vertex(center.x - a0, center.y - b0, center.z - c0),
+        new Vertex(center.x + a0, center.y - b0, center.z - c0),
+        new Vertex(center.x + a0, center.y - b0, center.z + c0),
+        new Vertex(center.x + a0, center.y + b0, center.z + c0),
+        new Vertex(center.x + a0, center.y + b0, center.z - c0),
+        new Vertex(center.x - a0, center.y + b0, center.z - c0),
+        new Vertex(center.x - a0, center.y + b0, center.z + c0)
+    ];
+
+    // Generate the faces
+    this.faces = [
+        [this.vertices[0], this.vertices[1], this.vertices[2], this.vertices[3]],
+        [this.vertices[3], this.vertices[2], this.vertices[5], this.vertices[4]],
+        [this.vertices[4], this.vertices[5], this.vertices[6], this.vertices[7]],
+        [this.vertices[7], this.vertices[6], this.vertices[1], this.vertices[0]],
+        [this.vertices[7], this.vertices[0], this.vertices[3], this.vertices[4]],
+        [this.vertices[1], this.vertices[6], this.vertices[5], this.vertices[2]]
+    ];
+};
+
+function project(M) {
+    return new Vertex2D(M.x, M.z);
+}
+
+function render(objects, ctx, dx, dy) {
+    // Clear the previous frame
+    ctx.clearRect(0, 0, 2*dx, 2*dy);
+
+    // For each object
+    for (var i = 0, n_obj = objects.length; i < n_obj; ++i) {
+        // For each face
+        for (var j = 0, n_faces = objects[i].faces.length; j < n_faces; ++j) {
+            // Current face
+            var face = objects[i].faces[j];
+
+            // Draw the first vertex
+            var P = project(face[0]);
+            ctx.beginPath();
+            ctx.moveTo(P.x + dx, -P.y + dy);
+
+            // Draw the other vertices
+            for (var k = 1, n_vertices = face.length; k < n_vertices; ++k) {
+                P = project(face[k]);
+                ctx.lineTo(P.x + dx, -P.y + dy);
+            }
+
+            // Close the path and draw the face
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+        }
+    }
+}
+
+function cubeInit() {
+    // Fix the canvas width and height
+    var canvas = document.getElementById('cnv');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    var dx = canvas.width / 2;
+    var dy = canvas.height / 2;
+
+    // Objects style
+    var ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillStyle = 'rgba(0, 150, 255, 0.5)';
+
+    // Create the cube
+    var cube_center = new Vertex(0, 11*dy/10 + dy/5, 0);
+    //var tail_cent = new Vertex(0, 11*dy/10, 275);
+    var cube = new rect(cube_center, 200, 200, 200);
+    //var wing = new rect(cube_center, 500, 75, 200); 
+    //var tail = new rect(tail_cent, 75, 150, 75);
+
+    var objects = [cube];
+    //var obj_ori = [cube1, wing1, tail1];
+
+    // First render
+    render(objects, ctx, dx, dy);
+
+    // Events
+    var mousedown = false;
+    var mx = 0;
+    var my = 0;
+
+    canvas.addEventListener('mousedown', initMove);
+    document.addEventListener('keydown', home, true);
+    //document.addEventListener('keypress', home, true);
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', stopMove);
+
+    // Rotate a vertice
+    function rotate(M, center, theta, phi) {
+        // Rotation matrix coefficients
+        var ct = Math.cos(theta);
+        var st = Math.sin(theta);
+        var cp = Math.cos(phi);
+        var sp = Math.sin(phi);
+
+        // Rotation
+        var x = M.x - center.x;
+        var y = M.y - center.y;
+        var z = M.z - center.z;
+
+        M.x = ct * x - st * cp * y + st * sp * z + center.x;
+        M.y = st * x + ct * cp * y - ct * sp * z + center.y;
+        M.z = sp * y + cp * z + center.z;
+    }
+    //Translate a Vertex
+        function translate(M, center, hor, ver) {
+        var x = M.x;
+        var y = M.z;
+        
+        M.x = x + hor/50;
+        M.z = y + ver/50;
+    }
+       function zoom(M, explosionness, center) {
+        var x = M.x - center.x;
+        var y = M.y - center.y;
+        var z = M.z - center.z;
+      
+        x = (x * explosionness);
+        y = (y * explosionness);
+        z = (z * explosionness);
+
+        M.x = x + center.x;
+        M.y = y + center.y;
+        M.z = z + center.z; 
+    }
+
+    function stopMove() {
+        mousedown = false;
+    }
+
+    // Initialize the movement
+    function initMove(evt) {
+          closePB();           /* CLOSES PARTS BAR */
+        
+        mousedown = true;
+        mx = evt.clientX;
+        my = evt.clientY;
+    }
+
+    function home(evt) {
+        if(evt.keyCode == 72) {
+          //  alert("H Pressed");
+            cube_center = new Vertex(0, 11*dy/10 + dy/5, 0);
+            var cube1 = new rect(cube_center, 200, 200, 200);
+            //var wing1 = new rect(cube_center, 500, 75, 200); 
+            //var tail1 = new rect(tail_cent, 75, 150, 75);
+            obj_ori = [cube1];
+            objects = obj_ori;
+            render(objects, ctx, dx, dy);
+
+
+            cube = cube1;
+            //wing = wing1;
+            //tail = tail1;
+        }
+    }
+
+    function move(evt) {
+            if (mousedown && evt.ctrlKey) {
+            var theta = (evt.clientX - mx) * Math.PI / 360;
+            var phi = (evt.clientY - my) * Math.PI / 180;
+
+            for (var i = 0; i < 8; ++i) {
+                rotate(cube.vertices[i], cube_center, theta, phi);
+                //rotate(wing.vertices[i], cube_center, theta, phi);
+                //rotate(tail.vertices[i], cube_center, theta, phi);
+            }
+            mx = evt.clientX;
+            my = evt.clientY;
+
+            render(objects, ctx, dx, dy);
+        }
+        else if (mousedown && evt.shiftKey){
+            
+            if (evt.clientY - my < 0) { 
+            var explosionness = 1.1;
+        }
+        else if (mousedown && evt.altKey ) {
+            var verts 
+        }
+        else {
+            var explosionness = 0.9;
+
+        }
+
+            for (var i = 0; i < 8; ++i) {
+                zoom(cube.vertices[i], explosionness, cube_center);
+                //zoom(wing.vertices[i], explosionness, cube_center);
+                //zoom(tail.vertices[i], explosionness, cube_center);
+            }
+            mx = evt.clientX;
+            my = evt.clientY;
+
+            render(objects, ctx, dx, dy);
+        }
+        else if(mousedown) {
+
+            hor = evt.clientX - mx;
+            ver = evt.clientY - my;
+
+
+            if (hor - mx > 0) {
+                hor = -1 * hor;
+            }
+            if (ver - my < 0) {
+                ver = -1 * ver;
+            }
+            cube_center.x = cube_center.x + hor/50;
+            cube_center.z = cube_center.z + ver/50;
+            for (var i = 0; i < 8; ++i) {
+            translate(cube.vertices[i], cube_center, hor, ver);
+            //translate(wing.vertices[i], cube_center, hor, ver);
+            //translate(tail.vertices[i], cube_center, hor, ver);
+            }
+            render(objects, ctx, dx, dy);
+        }
+        
+    }
+
+   
+};
+
+</script>
+</body>
+</html>
