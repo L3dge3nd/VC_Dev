@@ -1,0 +1,178 @@
+<html>
+<body>
+
+
+<canvas id ="cnvs" width = "800" height= "800" style = "border:1px solid #000000;"></canvas>
+<br>
+<button id ="planeButton"> Draw Plane </button>
+<br>
+<canvas id ="readout" width = "300" height= "25" style = "border:1px solid #000000;"></canvas>
+
+<script>
+
+
+document.getElementById("planeButton").addEventListener("click", drawPlane);
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/* Window Resizing Function 
+function windowSize() {
+
+    var wS = document.getElementById("cnvs");
+    wS.width = window.innerWidth * 0.9;
+    wS.height = window.innerHeight * 0.9;
+    document.body.style.overflow = 'hidden';
+}
+windowSize();
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/* Mouse Coordinate Functions */
+
+var canvas = document.getElementById('cnvs');
+var read   = document.getElementById('readout');
+var context = canvas.getContext('2d');
+
+function writeCoords(canvas, message) {
+        var context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.font = '16pt ComicSans';
+        context.fillStyle = 'black';
+        context.fillText(message, 25, 20);
+      }
+
+
+function getMouseXY(canvas, evt) {
+
+	var bounds = canvas.getBoundingClientRect();
+
+	return {
+		x: evt.clientX - bounds.left,
+		y: evt.clientY - bounds.top
+	};
+}
+
+
+
+
+canvas.addEventListener('mousemove', 
+	function(evt) {
+		window.mouseXY = getMouseXY(canvas,evt);
+		var message   = 'Mouse Position: ' + mouseXY.x + ',' + mouseXY.y;
+		writeCoords(read,message); 
+
+}, false);
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/* Drawing Functions */
+
+
+var Vertex2D = function(x,y) {
+	this.x = parseFloat(x);
+	this.y = parseFloat(y);
+};
+
+var rect = function(center, x, y) {
+
+	var x0 = x / 2;
+	var y0 = y / 2;
+
+	this.vertices = [
+		new Vertex2D(center.x - x0, center.y - y0),
+		new Vertex2D(center.x - x0, center.y + y0),
+		new Vertex2D(center.x + x0, center.y + y0),
+		new Vertex2D(center.x + x0, center.y - y0)
+	];
+
+};
+
+function render(objects, context) {
+
+
+	context.clearRect(0, 0, 800, 800);
+
+	for (var i = 0, num_obj = objects.length; i < num_obj; i++) {
+
+
+		context.beginPath();
+		context.moveTo(objects[i].vertices[0].x, objects[i].vertices[0].y);
+		context.lineTo(objects[i].vertices[1].x, objects[i].vertices[1].y);
+		context.lineTo(objects[i].vertices[2].x, objects[i].vertices[2].y);
+		context.lineTo(objects[i].vertices[3].x, objects[i].vertices[3].y);
+		context.closePath();
+		context.stroke();
+	}
+
+}
+
+
+function drawPlane() {
+
+
+	/* Vertices of fuselage, wing, tail */
+	var fuse_cent = new Vertex2D(400,400);
+	var wing_cent = new Vertex2D(400,350);
+	var tail_cent = new Vertex2D(400,150);
+	var fuse = new rect(fuse_cent,100,500);
+	var wing = new rect(wing_cent,450,100);
+	var tail = new rect(tail_cent,50,100);
+
+	var objs = [fuse,wing,tail];
+	var objs_orig = [fuse,wing,tail];
+
+	render(objs, context);
+
+	canvas.addEventListener('mousedown', initMove);
+	document.addEventListener('mousemove', moveBody);
+    document.addEventListener('mouseup', stopMove);
+	
+    var mousedown = false;
+    var mx = 0;
+    var my = 0;
+
+	// Initialize the movement
+    function initMove(evt) {
+        mousedown = true;
+        mx = evt.clientX;
+        my = evt.clientY;
+    }
+    var direction = "";
+    oldy = 0;
+
+    function move(evt) {
+        
+
+    }
+
+    function stopMove() {
+        mousedown = false;
+    }
+
+	function moveBody(dx, dy) {
+		if(mouseXY.x < 450 && mouseXY.x > 350 && mouseXY.y > 50 && mouseXY.y < 250){
+		if(direction == "up") {
+		for(var i = 0; i < objs[2].vertices.length; i++) {
+
+				objs[2].vertices[i].y = objs[2].vertices[i].y + dy/100;
+			}
+		}
+		else if(direction =="down") {
+			for(var i = 0; i < objs[2].vertices.length; i++) {
+
+				objs[2].vertices[i].y = objs[2].vertices[i].y - dy/100;
+			}
+		}
+
+		render(objs,context);
+	}
+}
+}
+
+</script>
+
+</body>
+</html>
