@@ -1,0 +1,540 @@
+<html>
+<body>
+
+
+<canvas id ="cnvs" width = "800" height= "800" style = "border:1px solid #000000;"></canvas>
+<br>
+<button id ="planeButton"> Draw Plane </button>
+<button id ="rotateButton"> Rotate 30 degrees </button>
+<br>
+<canvas id ="readout" width = "300" height= "25" style = "border:1px solid #000000;"></canvas>
+
+<script>
+
+
+document.getElementById("planeButton").addEventListener("click", drawPlane);
+
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/* Window Resizing Function 
+function windowSize() {
+
+    var wS = document.getElementById("cnvs");
+    wS.width = window.innerWidth * 0.9;
+    wS.height = window.innerHeight * 0.9;
+    document.body.style.overflow = 'hidden';
+}
+windowSize();
+*/
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/* Mouse Coordinate Functions */
+
+var canvas = document.getElementById('cnvs');
+var read   = document.getElementById('readout');
+var context = canvas.getContext('2d');
+
+function writeCoords(canvas, message) {
+        var context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.font = '16pt ComicSans';
+        context.fillStyle = 'black';
+        context.fillText(message, 25, 20);
+      }
+
+
+function getMouseXY(canvas, evt) {
+
+	var bounds = canvas.getBoundingClientRect();
+
+	return {
+		x: evt.clientX - bounds.left,
+		y: evt.clientY - bounds.top
+	};
+}
+
+
+
+
+canvas.addEventListener('mousemove', 
+	function(evt) {
+		window.mouseXY = getMouseXY(canvas,evt);
+		var message   = 'Mouse Position: ' + mouseXY.x + ',' + mouseXY.y;
+		writeCoords(read,message); 
+
+}, false);
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/* Drawing Functions */
+
+
+var Vertex2D = function(x,y) {
+	this.x = parseFloat(x);
+	this.y = parseFloat(y);
+};
+
+var rect = function(center, x, y) {
+
+	var x0 = x / 2;
+	var y0 = y / 2;
+
+	this.vertices = [
+		new Vertex2D(center.x - x0, center.y - y0),
+		new Vertex2D(center.x - x0, center.y + y0),
+		new Vertex2D(center.x + x0, center.y + y0),
+		new Vertex2D(center.x + x0, center.y - y0)
+	];
+
+};
+
+function render(objects, context) {
+
+
+	context.clearRect(0, 0, 800, 800);
+
+	for (var i = 0, num_obj = objects.length; i < num_obj; i++) {
+
+
+		context.beginPath();
+		context.moveTo(objects[i].vertices[0].x, objects[i].vertices[0].y);
+		context.lineTo(objects[i].vertices[1].x, objects[i].vertices[1].y);
+		context.lineTo(objects[i].vertices[2].x, objects[i].vertices[2].y);
+		context.lineTo(objects[i].vertices[3].x, objects[i].vertices[3].y);
+		context.closePath();
+		context.stroke();
+	}
+
+}
+
+
+function drawPlane() {
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById("rotateButton").addEventListener("click", rotate);
+
+	/* Vertices of fuselage, wing, tail */
+	var fuse_cent = new Vertex2D(400,400);
+	var wing_cent = new Vertex2D(400,350);
+	var tail_cent = new Vertex2D(400,150);
+	var fuse = new rect(fuse_cent,100,500);
+	var wing = new rect(wing_cent,450,100);
+	var tail = new rect(tail_cent,50,100);
+
+	var objs = [fuse,wing,tail];
+	var objs_orig = [fuse,wing,tail];
+
+	render(objs, context);
+
+	canvas.addEventListener('mousedown', initMove);
+	document.addEventListener('mousemove', moveTheta);
+    document.addEventListener('mouseup', stopMove);
+	
+    var mousedown = false;
+    var moving = false;
+    var mx = 0;
+    var my = 0;
+
+	// Initialize the movement
+    function initMove(evt) {
+        mousedown = true;
+        mx = evt.clientX;
+        my = evt.clientY;
+    }
+    function drawArrow(posx, posy, direction) {
+
+    	if (direction == "u") { 
+            var x = 0; var y = -20; var tipX = 5; var tipY = -15; 
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.closePath()
+            context.strokeStyle = "red";
+            context.stroke();
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.lineTo(posx + tipX, posy + tipY);
+            context.lineTo(posx - tipX, posy + tipY);
+            context.lineTo(posx + x, posy + y);
+            context.closePath();
+            context.fillStyle = 'red';
+            context.fill();
+
+            context.strokeStyle = 'black';
+
+        }
+
+    	if (direction == "r") { 
+            var x = 20; var y = 0;  var tipX = 15; var tipY = -5;
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.closePath()
+            context.strokeStyle = 'blue';
+            context.stroke();
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.lineTo(posx + tipX, posy + tipY);
+            context.lineTo(posx + tipX, posy - tipY);
+            context.lineTo(posx + x, posy + y);
+            context.closePath();
+            context.fillStyle = 'blue';
+            context.fill();
+
+            context.strokeStyle = 'black';}
+
+    	if (direction == "l") {
+            var x = -20; var y = 0; var tipX = -15; var tipY = -5;
+
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.closePath()
+            context.strokeStyle = 'green';
+            context.stroke();
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.lineTo(posx + tipX, posy + tipY);
+            context.lineTo(posx + tipX, posy - tipY);
+            context.lineTo(posx + x, posy + y);
+            context.closePath();
+            context.fillStyle = 'green';
+            context.fill();
+
+            context.strokeStyle = 'black';}
+    	if (direction == "d") {
+            var x = 0; var y = 20;  var tipX = 5; var tipY = 15;
+
+
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.closePath()
+            context.strokeStyle = 'orange';
+            context.stroke();
+
+            context.beginPath();
+            context.moveTo(posx, posy);
+            context.lineTo(posx + x, posy + y);
+            context.lineTo(posx + tipX, posy + tipY);
+            context.lineTo(posx - tipX, posy + tipY);
+            context.lineTo(posx + x, posy + y);
+            context.closePath();
+            context.fillStyle = 'orange';
+            context.fill();
+
+            context.strokeStyle = 'black';}
+    	
+    }
+
+    function rotate(evt) {
+        theta = 30 * (3.14 / 180);
+
+        var cosT = Math.cos(theta);
+        var sinT = Math.sin(theta);
+
+
+        for ( i = 0; i < 4; i++) {
+
+        xDist = objs[2].vertices[i].x - tail_cent.x;
+        yDist = objs[2].vertices[i].y - tail_cent.y;
+
+        objs[2].vertices[i].x = (xDist) * cosT - (yDist) * sinT + tail_cent.x;
+        objs[2].vertices[i].y = sinT * (xDist) + cosT * (yDist) + tail_cent.y;
+        }
+
+
+    render(objs, context);
+
+
+    }
+
+    function moveTheta(evt) {
+
+        var edge = false;
+        var edgeMove = false;
+
+        render(objs,context);
+
+
+        // For body translation
+        if(mouseXY.x > objs[2].vertices[0].x && mouseXY.y < objs[2].vertices[1].y && mouseXY.x < objs[2].vertices[2].x && mouseXY.y > objs[2].vertices[0].y){
+
+            edge = false;
+
+            if (mousedown == true && edge == false && moving == false) { moveBody(evt); }
+       }
+
+       // For top edge of tail
+       if(mouseXY.x > (objs[2].vertices[0].x - 5) && mouseXY.x < (objs[2].vertices[3].x + 5) && mouseXY.y > (objs[2].vertices[0].y - 10) && mouseXY.y < (objs[2].vertices[0].y + 5)) {
+
+        tx = (evt.clientX - objs[2].vertices[0].x) / (objs[2].vertices[3].x - objs[2].vertices[0].x);
+        ty = (evt.clientY - objs[2].vertices[0].y) / (objs[2].vertices[3].y - objs[2].vertices[0].y);
+        
+        edge = true;
+
+        drawArrow((objs[2].vertices[0].x + objs[2].vertices[3].x)/2, objs[2].vertices[0].y, 'u');
+
+
+            if(mousedown == true && edge == true && ((tx > 0 && tx < 1) || (ty > 0 && ty < 1))) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 't'); 
+                drawArrow((objs[2].vertices[0].x + objs[2].vertices[3].x)/2, objs[2].vertices[0].y, 'u');}
+       }
+
+       // For bottom edge of tail
+       if(mouseXY.x > (objs[2].vertices[1].x - 5) && mouseXY.x < (objs[2].vertices[2].x + 5) && mouseXY.y > (objs[2].vertices[1].y - 5) && mouseXY.y < (objs[2].vertices[1].y + 5)) {
+
+        tx = (evt.clientX - objs[2].vertices[1].x) / (objs[2].vertices[2].x - objs[2].vertices[1].x);
+        ty = (evt.clientY - objs[2].vertices[1].y) / (objs[2].vertices[2].y - objs[2].vertices[1].y);
+        
+        edge = true;
+
+        drawArrow((objs[2].vertices[1].x + objs[2].vertices[2].x)/2, objs[2].vertices[1].y, 'd');
+
+
+            if(mousedown == true && edge == true && ((tx > 0 && tx < 1) || (ty > 0 && ty < 1))) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 'b'); 
+                drawArrow((objs[2].vertices[1].x + objs[2].vertices[2].x)/2, objs[2].vertices[1].y, 'd');}
+       }
+
+       // For right edge of tail
+       if(mouseXY.x > (objs[2].vertices[2].x - 5) && mouseXY.x < (objs[2].vertices[2].x + 5) && mouseXY.y > (objs[2].vertices[3].y - 5) && mouseXY.y < (objs[2].vertices[2].y + 5)) {
+
+
+        tx = (evt.clientX - objs[2].vertices[2].x) / (objs[2].vertices[3].x - objs[2].vertices[2].x);
+        ty = (evt.clientY - objs[2].vertices[2].y) / (objs[2].vertices[3].y - objs[2].vertices[2].y);
+        
+        edge = true;
+
+        drawArrow(objs[2].vertices[2].x, (objs[2].vertices[2].y + objs[2].vertices[3].y)/2, 'r');
+
+
+            if(mousedown == true && edge == true && ((tx > 0 && tx < 1) || (ty > 0 && ty < 1))) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 'r'); 
+                drawArrow(objs[2].vertices[2].x, (objs[2].vertices[2].y + objs[2].vertices[3].y)/2, 'r');}
+       }
+
+       // For left edge of tail
+       if(mouseXY.x > (objs[2].vertices[0].x - 5) && mouseXY.x < (objs[2].vertices[0].x + 5) && mouseXY.y > (objs[2].vertices[0].y - 5) && mouseXY.y < (objs[2].vertices[1].y + 5)) {
+
+        tx = (evt.clientX - objs[2].vertices[0].x) / (objs[2].vertices[1].x - objs[2].vertices[0].x);
+        ty = (evt.clientY - objs[2].vertices[0].y) / (objs[2].vertices[1].y - objs[2].vertices[0].y);
+        
+        edge = true;
+
+        drawArrow(objs[2].vertices[0].x, (objs[2].vertices[0].y + objs[2].vertices[1].y)/2, 'l');
+
+
+            if(mousedown == true && edge == true && ((tx > 0 && tx < 1) || (ty > 0 && ty < 1))) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 'l'); 
+                drawArrow(objs[2].vertices[0].x, (objs[2].vertices[0].y + objs[2].vertices[1].y)/2, 'l');}
+       }
+
+
+   }
+
+    function move(evt) {
+
+    	var edge = false;
+    	var edgeMove = false;
+
+    	render(objs,context);
+
+
+        // For body translation
+       	if(mouseXY.x > objs[2].vertices[0].x && mouseXY.y < objs[2].vertices[1].y && mouseXY.x < objs[2].vertices[2].x && mouseXY.y > objs[2].vertices[0].y){
+
+       		edge = false;
+
+       		if (mousedown == true && edge == false && moving == false) { moveBody(evt); }
+       }
+
+       // For top edge of tail
+       if(mouseXY.x > (objs[2].vertices[0].x - 5) && mouseXY.x < (objs[2].vertices[3].x + 5) && mouseXY.y > (objs[2].vertices[0].y - 10) && mouseXY.y < (objs[2].vertices[0].y + 5)) {
+       	
+        edge = true;
+
+       	drawArrow((objs[2].vertices[0].x + objs[2].vertices[3].x)/2, objs[2].vertices[0].y, 'u');
+
+
+       		if(mousedown == true && edge == true) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 't'); 
+                drawArrow((objs[2].vertices[0].x + objs[2].vertices[3].x)/2, objs[2].vertices[0].y, 'u');}
+       }
+
+       // For bottom edge of tail
+       if(mouseXY.x > (objs[2].vertices[1].x - 5) && mouseXY.x < (objs[2].vertices[2].x + 5) && mouseXY.y > (objs[2].vertices[1].y - 5) && mouseXY.y < (objs[2].vertices[1].y + 5)) {
+        
+        edge = true;
+
+        drawArrow((objs[2].vertices[1].x + objs[2].vertices[2].x)/2, objs[2].vertices[1].y, 'd');
+
+
+            if(mousedown == true && edge == true) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 'b'); 
+                drawArrow((objs[2].vertices[1].x + objs[2].vertices[2].x)/2, objs[2].vertices[1].y, 'd');}
+       }
+
+       // For right edge of tail
+       if(mouseXY.x > (objs[2].vertices[2].x - 5) && mouseXY.x < (objs[2].vertices[2].x + 5) && mouseXY.y > (objs[2].vertices[3].y - 5) && mouseXY.y < (objs[2].vertices[2].y + 5)) {
+        
+        edge = true;
+
+        drawArrow(objs[2].vertices[2].x, (objs[2].vertices[2].y + objs[2].vertices[3].y)/2, 'r');
+
+
+            if(mousedown == true && edge == true) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 'r'); 
+                drawArrow(objs[2].vertices[2].x, (objs[2].vertices[2].y + objs[2].vertices[3].y)/2, 'r');}
+       }
+
+       // For left edge of tail
+       if(mouseXY.x > (objs[2].vertices[0].x - 5) && mouseXY.x < (objs[2].vertices[0].x + 5) && mouseXY.y > (objs[2].vertices[0].y - 5) && mouseXY.y < (objs[2].vertices[1].y + 5)) {
+        
+        edge = true;
+
+        drawArrow(objs[2].vertices[0].x, (objs[2].vertices[0].y + objs[2].vertices[1].y)/2, 'l');
+
+
+            if(mousedown == true && edge == true) { 
+                edgeMove = true; moving = true; 
+                extendBody(evt, 'l'); 
+                drawArrow(objs[2].vertices[0].x, (objs[2].vertices[0].y + objs[2].vertices[1].y)/2, 'l');}
+       }
+
+
+   }
+
+    function stopMove() {
+        mousedown = false;
+        moving = false;
+    }
+
+    //Translate a Vertex
+    function translate(M, center, dx, dy) {
+        var x = M.x;
+        var y = M.y;
+        
+        M.x = x + dx;
+        M.y = y + dy;
+    }
+
+    //Extend a face
+    function extend(M, center, dx, dy) {
+        var x = M.x;
+        var y = M.y;
+        
+        M.x = x + dx;
+        M.y = y + dy;
+    }
+
+	function moveBody(evt) {
+
+		// Update mouse location and distance travelled
+		dx = evt.clientX - mx;
+        dy = my - evt.clientY;
+        mx = evt.clientX;
+        my = evt.clientY;
+
+        // Check direction of movement
+        if (dx - mx > 0) {dx = -1 * dx;}
+        if (dy - my < 0) {dy = -1 * dy;}
+
+        // Adjust object center
+        tail_cent.y = tail_cent.y + dy;
+		tail_cent.x = tail_cent.x + dx;
+
+		// Translate object
+		for(var i = 0; i < objs[2].vertices.length; i++) {
+				translate(objs[2].vertices[i], tail_cent, dx, dy)
+			}
+
+		render(objs,context);
+	}
+
+	function extendBody(evt, edge) {
+		// Update mouse location and distance travelled
+		dx = evt.clientX - mx;
+        dy = my - evt.clientY;
+        mx = evt.clientX;
+        my = evt.clientY;
+
+        // Check direction of movement
+        if (dx - mx > 0) {dx = -1 * dx;}
+        if (dy - my < 0) {dy = -1 * dy;}
+
+		// Extend object
+
+        // Edge designation
+        //if(mouseXY.x > (objs[2].vertices[0].x - 3) && mouseXY.x < (objs[2].vertices[3].x + 3) && mouseXY.y > (objs[2].vertices[0].y - 3) && mouseXY.y < (objs[2].vertices[0].y + 3)) {
+
+        if (edge == 't') {
+            dx = 0;
+
+            // Adjust object center
+            tail_cent.y = tail_cent.y + dy;
+            tail_cent.x = tail_cent.x + dx;
+
+		    extend(objs[2].vertices[0], tail_cent, dx, dy);
+		    extend(objs[2].vertices[3], tail_cent, dx, dy);
+        }
+        if (edge == 'b') {
+            dx = 0;
+
+            // Adjust object center
+            tail_cent.y = tail_cent.y + dy;
+            tail_cent.x = tail_cent.x + dx;
+
+            extend(objs[2].vertices[1], tail_cent, dx, dy);
+            extend(objs[2].vertices[2], tail_cent, dx, dy);
+        }
+        if (edge == 'r') {
+            dy = 0;
+
+            // Adjust object center
+            tail_cent.y = tail_cent.y + dy;
+            tail_cent.x = tail_cent.x + dx;
+
+            extend(objs[2].vertices[2], tail_cent, dx, dy);
+            extend(objs[2].vertices[3], tail_cent, dx, dy);
+        }
+        if (edge == 'l') {
+            dy = 0;
+
+            // Adjust object center
+            tail_cent.y = tail_cent.y + dy;
+            tail_cent.x = tail_cent.x + dx;
+
+            extend(objs[2].vertices[0], tail_cent, dx, dy);
+            extend(objs[2].vertices[1], tail_cent, dx, dy);
+        }
+
+		render(objs,context);
+	}
+}
+
+</script>
+
+</body>
+</html>
