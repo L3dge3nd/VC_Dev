@@ -1,0 +1,461 @@
+<html>
+<script src = "gl-matrix.js"></script>
+<script src = "VC.js"></script>
+<script src = "math.js"></script>
+
+<canvas id="canvasgl" width= "50" height= "50" style="border:1px solid #d3d3d3;" ondrop="drop(event)" ondragover="allowDrop(event)"></canvas>
+
+
+
+<!-- Parts Bar Button -->
+<div id="benjaminbutton" class="overlay">
+
+  <div class="overlay-content">
+
+  <button type="button" onclick=togglePB()>Parts</button>
+
+  </div>
+
+</div>
+
+
+ <!-- Parts Bar -->
+<div id="partsBar" class="overlay">
+
+
+  <div class="overlay-content">
+
+    <img id ="cubePic" src="VCcube.png" draggable="true" ondragstart="drag(event)">
+
+    <br>
+    <div id = "checkID">
+    <input type = "checkbox" id = "animBox" value = "checkAnim" checked = "checked"> Enable Animations
+    </div>
+    <br>
+        
+
+  </div>
+
+</div>
+
+
+
+ <!-- Animation Bar -->
+<div id="animBar" class="overlay">
+
+  <div class="overlay-content">
+
+    <button id = "closeAnimButton" onclick = toggleAnim()> Close Anim </button>
+
+    <video id ="vid1" onclick="highlightVid(this)" ondblclick="resetVid()">
+        <source src = "extend.mp4" type = "video/mp4" />
+        <source src = "extend.ogg" type = "video/ogg" />
+    </video>
+
+    <br>
+
+    <video id ="vid2" onclick = "highlightVid(this)" ondblclick = "resetVid()">
+        <source src = "rotate2.mp4" type = "video/mp4" />
+        <source src = "rotate2.ogg" type = "video/ogg" />
+    </video>
+
+    <br>
+
+    <video id ="vid3" onclick = "highlightVid(this)" ondblclick = "resetVid()">
+        <source src = "zoom.mp4" type = "video/mp4" />
+        <source src = "zoom.ogg" type = "video/ogg" />
+    </video>
+
+    <br>
+
+    <video id ="vid4" onclick = "highlightVid(this)" ondblclick = "resetVid()">
+        <source src = "translate.mp4" type = "video/mp4" />
+        <source src = "translate.ogg" type = "video/ogg" />
+    </video>
+
+  </div>
+
+</div>
+
+
+<style>
+/* CSS Content */
+
+#canvasgl {
+
+    background-color: rgba(191 , 217, 204, 1);
+}
+
+#partsBar {
+    height: 100%;
+    width: 0%;
+    position: fixed;
+    z-index: 2; 
+    left: 0;
+    top: 0;
+    background-color: rgb(221,235,200); 
+    background-color: rgba(221,235,200, 1); 
+    overflow-x: hidden; /* Disable horizontal scroll */
+    overflow-y: hidden; /* Disable horizontal scroll */
+    transition: 0.5s; /* Slide delay */
+}
+
+#benjaminbutton {
+    transition: 0.5s;
+    position: fixed;
+    z-index: 1;
+    right: 97.5%;
+    top: 50%;
+    -webkit-transform: rotate(-90deg);
+    -moz-transform: rotate(-90deg);
+    -o-transform: rotate(-90deg);
+    -ms-transform: rotate(-90deg);
+    transform: rotate(-90deg);
+    
+}
+
+#cubePic {
+    position: absolute;
+    right: 10%;
+    top: 5%;
+    width: 100px;
+    height: auto;
+    padding: 10px;
+}
+
+#animBar {
+    height: 100%;
+    width: 0%;
+    position: fixed;
+    z-index: 3; 
+    right: 0%;
+    top: 0;
+    background-color: rgb(0,128,225); 
+    background-color: rgba(0,128,225, 0); 
+    overflow-x: hidden; /* Disable horizontal scroll */
+    overflow-y: hidden; /* Disable horizontal scroll */
+    transition: 0.5s; /* Slide delay */
+}
+
+
+#checkID{
+
+    position: absolute;
+    z-index: 2;
+    left: 10%;
+    bottom: 10%;
+
+}
+
+#closeAnimButton {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+#vid1 {
+    position: absolute;
+    z-index: 2;
+    right: 0%;
+    top: 5%;
+    width: 95%;
+    height: auto;
+    padding: 0px;
+    border-style: solid;
+    border-width: 2px;
+    border-color: #669999;
+}
+
+
+#vid2 {
+    position: absolute;
+    z-index: 2;
+    right: 0%;
+    top: 30%;
+    width: 95%;
+    height: auto;
+    padding: 0px;
+    border-style: solid;
+    border-width: 2px;
+    border-color: #669999;
+}
+
+
+#vid3 {
+    position: absolute;
+    z-index: 2;
+    right: 0%;
+    top: 55%;
+    width: 95%;
+    height: auto;
+    padding: 0px;
+    border-style: solid;
+    border-width: 2px;
+    border-color: #669999;
+}
+
+#vid4 {
+    position: absolute;
+    z-index: 2;
+    right: 0%;
+    top: 80%;
+    width: 95%;
+    height: auto;
+    padding: 0px;
+    border-style: solid;
+    border-width: 2px;
+    border-color: #669999;
+}
+
+
+
+</style>
+
+
+<script>
+var vertexShaderText =
+[
+'precision mediump float;',
+'',
+'attribute vec3 vertPosition;',
+'attribute vec3 vertColor;',
+'varying vec3 fragColor;',
+'uniform mat4 mWorld;',
+'uniform mat4 mView;',
+'uniform mat4 mProj;',
+'',
+'void main()',
+'{',
+' fragColor = vertColor;',
+' gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);',
+'}'
+].join('\n');
+
+var fragmentShaderText = 
+[
+'precision mediump float;',
+'',
+'varying vec3 fragColor;',
+'void main()',
+'{',
+' gl_FragColor = vec4(fragColor, 1.0);',
+'}'
+].join('\n');
+
+
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+function drag(ev) {
+    ev.dataTransfer.setData("cubePic", ev.target.id);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    var part = ev.dataTransfer.getData("cubePic");
+    InitDemo();
+    closePB();
+
+    toggleAnim();
+}
+
+
+/* FUNCTIONS FOR MOVING ANIMATIONS  
+
+document.getElementById('vid1').addEventListener('mousedown', clickVid, false);
+
+function clickVid(evt) {
+
+    window.addEventListener('mousemove', moveVids, true);
+}
+
+function unclickVid(){
+
+    window.removeEventListener('mousemove', moveVids, true);
+}
+
+function moveVids(evt){
+
+    var div = document.getElementById('animBar');
+    div.style.position = 'absolute';
+    div.style.top = evt.clientY;
+    div.style.left = evt.clientX;
+}
+*/
+
+/* Sets size of canvas to current window size on init */
+function windowSize() {
+
+    var wS = document.getElementById("canvasgl");
+    wS.width = window.innerWidth * .985;
+    wS.height = window.innerHeight * .973;
+}
+windowSize();
+
+
+// Value of Toggle Animations Checkbox
+var animCheck = document.querySelector('input[type=checkbox]');
+
+
+var statePB = 0;
+
+function togglePB() {
+    if(statePB == 0) {
+        statePB = 1;
+        openPB();
+    }
+    else if(statePB == 1) {
+        statePB = 0;
+        closePB();
+    }
+
+}
+function openPB() {
+    document.getElementById("partsBar").style.width = "10%";
+    document.getElementById("benjaminbutton").style.right = "87.5%"
+}
+
+/* Close when someone clicks on the "x" symbol inside the overlay */
+function closePB() {
+    document.getElementById("partsBar").style.width = "0%";
+    document.getElementById("benjaminbutton").style.right = "97.5%"
+}
+
+var stateAnim = 0;
+
+var vid_1 = document.getElementById("vid1");
+var vid_2 = document.getElementById("vid2");
+var vid_3 = document.getElementById("vid3");
+var vid_4 = document.getElementById("vid4");
+var aBar =  document.getElementById("animBar");
+vid_1.loop = true;
+vid_2.loop = true;
+vid_3.loop = true;
+vid_4.loop = true;
+
+
+function toggleAnim() {
+    if(animCheck.checked == true){
+
+        if(stateAnim == 0) {
+            stateAnim = 1;
+            aBar.style.width = "20%";
+            //document.getElementById("animButton").style.right = "-35"
+
+            playVid();
+            //setTimeout(toggleAnim, 13000);
+        }
+        else if(stateAnim == 1) {
+            stateAnim = 0;
+            aBar.style.width = "0%";
+            pauseVid();
+        }
+    }
+    else {
+        stateAnim = 0;
+        aBar.style.width = "0%";
+        pauseVid();
+    }
+}
+
+
+function playVid() { 
+    vid_1.currentTime = 0; 
+    vid_1.play();
+
+    vid_2.currentTime = 0; 
+    vid_2.play(); 
+    vid_2.volume = 0;
+
+    vid_3.currentTime = 0; 
+    vid_3.play(); 
+    vid_3.volume = 0;
+
+    vid_4.currentTime = 0; 
+    vid_4.play(); 
+    vid_4.volume = 0;
+
+}
+function pauseVid() { 
+    vid_1.pause(); 
+    vid_2.pause(); 
+    vid_3.pause(); 
+    vid_4.pause(); 
+
+}
+
+function highlightVid(v) {
+
+    
+    aBar.style.width = "35%";
+    aBar.style.height = "250";
+    if( v == vid_1) { 
+
+        v.style.width = "95%";  v.style.top = "0";
+        vid_2.style.width = "0"; vid_2.style.zIndex = "1";
+        vid_3.style.width = "0"; vid_3.style.zIndex = "1";
+        vid_4.style.width = "0"; vid_4.style.zIndex = "1";
+
+    }
+    if( v == vid_2) { 
+
+        v.style.width = "95%";  v.style.top = "0";
+        vid_1.style.width = "0"; vid_1.style.zIndex = "1";
+        vid_3.style.width = "0"; vid_3.style.zIndex = "1";
+        vid_4.style.width = "0"; vid_4.style.zIndex = "1";
+
+    }
+    if( v == vid_3) { 
+        v.style.width = "95%";  v.style.top = "0";
+        vid_1.style.width = "0"; vid_1.style.zIndex = "1";
+        vid_2.style.width = "0"; vid_2.style.zIndex = "1";
+        vid_4.style.width = "0"; vid_4.style.zIndex = "1";
+    }
+    if( v == vid_4) { 
+        v.style.width = "95%";  v.style.top = "0";
+        vid_1.style.width = "0"; vid_1.style.zIndex = "1";
+        vid_2.style.width = "0"; vid_2.style.zIndex = "1";
+        vid_3.style.width = "0"; vid_3.style.zIndex = "1";
+    }
+
+
+
+}
+
+function resetVid() {
+
+    aBar.style.width = "20%";
+    aBar.style.height = "100%";
+
+    vid_1.style.width = "95%"; vid_1.style.zIndex = "2"; 
+    vid_1.style.top = "5%";
+
+    vid_2.style.width = "95%"; vid_2.style.zIndex = "2";
+    vid_2.style.top = "30%";
+
+    vid_3.style.width = "95%"; vid_3.style.zIndex = "2";
+    vid_3.style.top = "55%";
+
+    vid_4.style.width = "95%"; vid_4.style.zIndex = "2";
+    vid_4.style.top = "80%";
+
+    stateAnim = 0;
+    toggleAnim();
+}
+
+
+
+
+</script>
+
+
+
+
+
+
+
+<body>
+
+</body>
+</html>
